@@ -27,12 +27,12 @@ col1, col2 = st.columns([1, 2])
 with col1:
     st.subheader("Control Panel")
     
-    # Engine & Ratios
+    # Engine & Ratios - Updated with the correct API model names!
     model_choice = st.selectbox(
         "Choose your engine:", 
         [
-            "gemini-3-pro-image-preview",
-            "gemini-2.5-flash-image"
+            "gemini-2.5-flash-image", # The native Gemini generator
+            "imagen-3.0-generate-002" # The standard Imagen 3 model
         ]
     )
     aspect_ratio = st.selectbox("Aspect Ratio:", ["1:1", "16:9", "9:16", "4:3", "3:4"])
@@ -43,7 +43,6 @@ with col1:
     st.markdown("### Reference Images")
     st.caption("Advanced features for future expansion!")
     style_ref = st.file_uploader("Upload Style Reference", type=["png", "jpg", "jpeg"])
-    face_ref = st.file_uploader("Upload Face Reference", type=["png", "jpg", "jpeg"])
 
 with col2:
     st.subheader("The Canvas")
@@ -56,28 +55,36 @@ with col2:
         else:
             with st.spinner("Mixing the digital paints..."):
                 try:
-                    # Setup the configuration
-                    # Note: We configure the image generation here. Core safety 
-                    # policies (NSFW) are permanently enforced by Google's backend.
-                    config = types.GenerateImagesConfig(
-                        number_of_images=1,
-                        aspect_ratio=aspect_ratio,
-                        negative_prompt=neg_prompt if neg_prompt else None,
-                    )
-                    
-                    # Call the API
-                    result = client.models.generate_images(
-                        model=model_choice,
-                        prompt=prompt,
-                        config=config
-                    )
-                    
-                    # Display the image
-                    for generated_image in result.generated_images:
-                        image = Image.open(io.BytesIO(generated_image.image.image_bytes))
-                        st.image(image, caption=prompt, use_container_width=True)
-                        st.balloons()
-                        
+                    # Route A: Using the native Gemini models (Nano Banana series)
+                    if "gemini" in model_choice:
+                        response = client.models.generate_content(
+                            model=model_choice,
+                            contents=[prompt],
+                        )
+                        # Extract the image from the response parts
+                        for part in response.candidates[0].content.parts:
+                            if part.inline_data is not None:
+                                image = Image.open(io.BytesIO(part.inline_data.data))
+                                st.image(image, caption=prompt, use_container_width=True)
+                                st.balloons()
+                                
+                    # Route B: Using the Imagen models
+                    else:
+                        config = types.GenerateImagesConfig(
+                            number_of_images=1,
+                            aspect_ratio=aspect_ratio,
+                            negative_prompt=neg_prompt if neg_prompt else None,
+                        )
+                        result = client.models.generate_images(
+                            model=model_choice,
+                            prompt=prompt,
+                            config=config
+                        )
+                        # Display the image
+                        for generated_image in result.generated_images:
+                            image = Image.open(io.BytesIO(generated_image.image.image_bytes))
+                            st.image(image, caption=prompt, use_container_width=True)
+                            st.balloons()
+                            
                 except Exception as e:
-                    # If it's a safety block, this is where the error will show up!
-                    st.error(f"Oops, we hit a snag (likely a safety block or API error): {e}")
+                    st.error(f"Oops, we hit a snag: {e}")
