@@ -28,7 +28,13 @@ with col1:
     st.subheader("Control Panel")
     
     # Engine & Ratios
-    model_choice = st.selectbox("Choose your engine:", ["imagen-3.0-generate-001", "imagen-3.0-fast-generate-001"])
+    model_choice = st.selectbox(
+        "Choose your engine:", 
+        [
+            "gemini-3-pro-image-preview",
+            "gemini-2.5-flash-image"
+        ]
+    )
     aspect_ratio = st.selectbox("Aspect Ratio:", ["1:1", "16:9", "9:16", "4:3", "3:4"])
     seed = st.number_input("Seed (0 for random):", value=0, help="Use the same seed to reproduce an exact image.")
     
